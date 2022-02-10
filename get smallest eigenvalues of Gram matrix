@@ -1,0 +1,51 @@
+'''
+these will get the weights from the models
+
+
+
+
+smallesteigenvalues = [] #initialize this array before compiling the model
+
+'''
+for the RandomFourierFeatures use this to determine the smallest non-zero eigenvalue of the assiciated Gram matrix
+'''
+
+W, b = model.layers[0].get_weights()
+W_T=np.transpose(W)
+feature_matrix=np.cos(np.matmul(X_train,W)+b) #building the feature matrix using the training data
+Gram=np.matmul(feature_matrix, np.transpose(feature_matrix))
+eigenvalues=np.linalg.eigvals(Gram)
+smallesteigenvalue=0
+for i in range(len(eigenvalues)):
+    if np.abs(eigenvalues[-1-i])>10**(-8): # vary the cut-off value in order to see the distribution
+        smallesteigenvalue = np.abs(eigenvalues[-1-i])
+        break
+    else:
+        continue
+        
+smallesteigenvalues.append(smallesteigenvalue)
+
+
+
+
+'''
+for the RandomReLUFeatures use this to determine the smallest non-zero eigenvalue of the assiciated Gram matrix
+'''
+
+
+W = model.layers[0].get_weights()
+W=W[0]
+feature_matrix = tf.nn.relu(np.matmul(X_train, W)) #building the feature matrix using the training data
+Gram = np.matmul(feature_matrix, np.transpose(feature_matrix))
+eigenvalues = np.linalg.eigvals(Gram)
+smallesteigenvalue = 0
+for i in range(len(eigenvalues)):
+    if np.abs(eigenvalues[-1 - i]) > 10 ** (-10): # vary the cut-off value in order to see the distribution
+         smallesteigenvalue = np.abs(eigenvalues[-1 - i])
+         break
+    else:
+         continue
+         
+ smallesteigenvalues.append(smallesteigenvalue)
+       
+       
