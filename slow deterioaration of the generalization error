@@ -22,12 +22,12 @@ class myCallback(tf.keras.callbacks.Callback):
         loss, acc = self.model.evaluate(x, y, batch_size=n, verbose=0)
         test_error.append(loss)
 '''
-then use any of the two models e.g.
+then use any of the two models e.g. RandomFourierFeatures, assuming the data is loaded
 '''
 
 test_error = [] # the callback above will save the test error after every iteration in this array
 
-t = 10**5 'number of iterations
+t = 10**5 #number of iterations
  
 m=500 # set to any value you desire
 
@@ -42,7 +42,7 @@ model.layers[0].trainable = False   #the weights of the first layer from the uni
 
 model.compile(optimizer='sgd', loss='mean_squared_error', metrics = 'mse')
 
-result = model.fit(X_train, y_train, batch_size=n, epochs=t, verbose=0,callbacks=[myCallback((X_test, y_test))])
+result = model.fit(X_train, y_train, batch_size=n, epochs=t, verbose=0,callbacks=[myCallback((X_test, y_test))]) #the callback from above is used here
 
 plt.rc('font', size=18)
 plt.title('Fourier features')
