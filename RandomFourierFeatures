@@ -61,7 +61,9 @@ X_test = select_subset(X_test, y_test, 0, 500)[0]
 y_test = select_subset(X_test, y_test, 0, 500)[1]
 
 
-
+'''
+x_dd is an array of the number of weigths that the model will be trained on 
+'''
 
 x_dd = np.logspace(start=1, stop=4, num=10, base=10.0)
 
@@ -71,25 +73,20 @@ x_dd = np.sort(x_dd)
 x_dd = np.floor(x_dd)
 x_dd = np.array(x_dd, dtype = 'int')
 
-print(x_dd)
-
-''' 
-my weights of the first layer are going to have dimension (d,x_dd[i]) 
-'''
 test_loss = [np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd))] #will use for plotting the test results
 test_error = []
 smallesteigenvalues = []#tf.zeros(len(x_dd))
-k = [0]
+k = [4,5]  # for 10**k[i] with i=4,5 the double descent phenomenon is easily observed with the model below
 
 for j in range(len(k)):
     t = 10 ** (k[j]) #number of epochs, every set of weights will be trained 10**k[i] times for every k[i]
     x = np.arange(0, t)
     for i in range(len(x_dd)):
         m = x_dd[i]
-
-        init1 = tf.constant_initializer(myUnitBall(d, m)) #my weights
-        #init2 = tf.constant_initializer(myUnitBall(m, 1)) #biases, I don't use them for now
-        #tf.keras.initializers.RandomNormal(mean=0.0, stddev=1.0, seed=None)
+	
+	'''
+	building the model: cosine activation function in first layer; RandomNormal distribution of weights and uniform distribution first layer of biases
+	'''
 
         model = tf.keras.models.Sequential([
             tf.keras.layers.Dense(m, input_dim=d, activation=tf.cos, kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.0, stddev=1.0, seed=None),  bias_initializer=tf.keras.initializers.RandomUniform(minval=0.0, maxval=2*np.pi, seed=None)),
@@ -97,62 +94,31 @@ for j in range(len(k)):
         ])
 
         model.layers[0].trainable = False #the weights of the first layer are randomized and will not be trained
-        #model.summary()
+	
+        #model.summary() # returns all relevant parameters of the model
+	
         model.compile(optimizer='sgd', loss='mean_squared_error', metrics='mse')
+	
         result = model.fit(X_train, y_train, batch_size=n, epochs=t, verbose=0, callbacks=[history])
+	
         score = model.evaluate(X_test, y_test, batch_size=n, verbose=2)
+	
         test_loss[j][i] = score[0]
-'''
-        bias_initializer=tf.keras.initializers.RandomUniform(minval=0.0, maxval=2*np.pi, seed=None)
-        print(np.shape(model.layers[0].get_weights()))
-        W, b = model.layers[0].get_weights()
-        print(np.shape(W),np.shape(b))
-        W_T=np.transpose(W)
-        print(np.shape(W_T))
-        feature_matrix=np.cos(np.matmul(X_train,W)+b)
-        Gram=np.matmul(feature_matrix, np.transpose(feature_matrix))
-        print(np.shape(Gram))
-        singularvalues=scipy.linalg.svdvals(Gram)
-        eigenvalues=np.linalg.eigvals(Gram)
-        smallesteigenvalue=0
-        for i in range(len(eigenvalues)):
-            if np.abs(eigenvalues[-1-i])>10**(-8):
-                smallesteigenvalue = np.abs(eigenvalues[-1-i])
-                break
-            else:
-                continue
-        #print(np.abs(eigenvalues))
-        #print(np.sqrt(singularvalues))
-        print(len(eigenvalues))
-        smallesteigenvalues.append(smallesteigenvalue)
-        print(smallesteigenvalues)
-'''
 
 
-        #  print(history.params)
-
-
-        # train_loss[i]=result.history['loss'][-1]
-        # train_accuracy[i]=result.history['accuracy'][-1]
-
-        # test_accuracy[i]=score[1]
-
+      
 
 
 plt.title('test_error')
 plt.xlabel('t')
 plt.ylabel('error')
 
-#plt.semilogx(x, test_error, label='mse')
+
 plt.scatter(x_dd, test_loss[0])
-plt.semilogx(x_dd, test_loss[0], label='t=10^2')
-plt.scatter(x_dd, smallesteigenvalue)
-plt.semilogx(x_dd, test_loss[1], label='t=10^3')
+plt.semilogx(x_dd, test_loss[0], label='t=10^4')
 plt.scatter(x_dd, test_loss[1])
-plt.semilogx(x_dd, test_loss[2], label='t=10^4')
-plt.scatter(x_dd, test_loss[2])
-plt.semilogx(x_dd, test_loss[3], label='t=10^5')
-plt.scatter(x_dd, test_loss[3])
+plt.semilogx(x_dd, test_loss[1], label='t=10^5')
+
 
 plt.grid()
 plt.legend()
