@@ -1,0 +1,58 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from keras.datasets import mnist
+from keras.callbacks import History
+import scipy.linalg
+
+
+
+class myCallback(tf.keras.callbacks.Callback):
+    '''
+    callback function that allows me to evaluate the model after every iteration of GD
+    '''
+    def __init__(self, test_data):
+        self.test_data = test_data
+
+
+    def on_epoch_end(self, epoch, logs={}):
+        x, y = self.test_data
+        loss, acc = self.model.evaluate(x, y, batch_size=n, verbose=0)
+        test_error.append(loss)
+'''
+then use any of the two models e.g.
+'''
+
+test_error = [] # the callback above will save the test error after every iteration in this array
+
+t = 10**5 'number of iterations
+ 
+m=500 # set to any value you desire
+
+model = tf.keras.models.Sequential([
+        tf.keras.layers.Dense(m, input_dim=d, activation=tf.cos, kernel_initializer=tf.keras.initializers.RandomNormal(
+        mean=0.0, stddev=1.0, seed=None), bias_initializer=tf.keras.initializers.RandomUniform(minval=0.0, maxval=2*np.pi, seed=None)),
+        tf.keras.layers.Dense(1, activation=None, use_bias = False, kernel_initializer=tf.keras.initializers.Zeros) #initialization of 2nd layer weights at 0
+        ])
+
+model.layers[0].trainable = False   #the weights of the first layer from the unit ball will not be trained
+        #model.summary()
+
+model.compile(optimizer='sgd', loss='mean_squared_error', metrics = 'mse')
+
+result = model.fit(X_train, y_train, batch_size=n, epochs=t, verbose=0,callbacks=[myCallback((X_test, y_test))])
+
+plt.rc('font', size=18)
+plt.title('Fourier features')
+plt.xlabel('time')
+plt.ylabel('generalization error')
+
+plt.semilogx(x, test_error, label='mse')
+#plt.semilogx(x, y, label='square root of t')
+
+plt.grid()
+plt.legend()
+plt.show()
+
