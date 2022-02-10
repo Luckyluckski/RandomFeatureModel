@@ -1,0 +1,131 @@
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+import tensorflow as tf
+from keras.datasets import mnist
+from keras.callbacks import History
+import scipy.linalg
+
+
+history = History()
+
+'''
+loading MNIST
+'''
+
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+'''
+filtering 0's and 1's: there are 12665 0's and 1's in mnist's training set and 2115 in the test set 
+'''
+
+train_filter = np.where((y_train == 0) | (y_train == 1))
+test_filter = np.where((y_test == 0) | (y_test == 1))
+
+X_train, y_train = X_train[train_filter], y_train[train_filter]
+X_test, y_test = X_test[test_filter], y_test[test_filter]
+
+print(np.shape(X_train), np.shape(X_test), np.shape(y_train), np.shape(y_test))
+
+'''
+rescaling the grey values to [0,1]
+'''
+X_train = np.reshape(X_train, (12665, 784))/255
+X_test = np.reshape(X_test, (2115, 784))/255
+
+
+
+def select_subset(X, y, h, s):
+    '''
+	selecting a suitable subset
+    '''
+    return (X[h:s, :], y[h:s])
+
+
+def myUnitBall(d, N):
+    '''
+    returns N uniformly distributed points from within the unit ball of dimension d
+    '''
+
+    vals = np.random.normal(loc=0.0, scale=1.0, size=(N, d+2))
+    r = np.sqrt((vals ** 2).sum(axis=0))
+    points = vals / r
+    points = np.delete(points, np.s_[:2], 1)
+    return points
+
+'''
+setting my basic values: n=batch_size, d=input dimension
+'''
+
+n = 500
+d = 784
+
+
+X_train = select_subset(X_train, y_train, 0, 500)[0]
+y_train = select_subset(X_train, y_train,0, 500)[1]
+
+X_test = select_subset(X_test, y_test, 0, 500)[0]
+y_test = select_subset(X_test, y_test, 0, 500)[1]
+
+
+'''
+x_dd is an array of the number of weigths that the model will be trained on 
+'''
+
+x_dd = np.logspace(start=1, stop=4, num=10, base=10.0)
+
+x_dd = np.append(x_dd,500)
+x_dd = np.append(x_dd,550)
+x_dd = np.sort(x_dd)
+x_dd = np.floor(x_dd)
+x_dd = np.array(x_dd, dtype = 'int')
+
+print(x_dd)
+
+
+test_loss = [np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd)), np.zeros(len(x_dd))] #will use for plotting the test results
+test_error = []
+smallesteigenvalues = []#tf.zeros(len(x_dd))
+k = [1,2] #the risk curve only shows the double descent phenomenon from 10^5 onwards, which takes long computation time.
+
+for j in range(len(k)):
+    t = 10 ** (k[j]) #number of epochs, every set of weights will be trained 10**k[i] times for every k[i]
+    x = np.arange(0, t)
+    for i in range(len(x_dd)):
+        m = x_dd[i]
+
+        init1 = tf.constant_initializer(myUnitBall(d, m)) #my weights
+
+        model = tf.keras.models.Sequential([
+            tf.keras.layers.Dense(m, input_dim=d, activation=tf.nn.relu, use_bias = False, kernel_initializer = init1),
+            tf.keras.layers.Dense(1, activation=None, use_bias = False, kernel_initializer=tf.keras.initializers.Zeros) #initialization of 2nd layer weights at 0
+        ])
+
+        model.layers[0].trainable = False #the weights of the first layer will not be trained
+        
+        model.compile(optimizer='sgd', loss='mean_squared_error', metrics='mse')
+        
+        #model.summary() # returns all relevant parameters of the model
+        
+        result = model.fit(X_train, y_train, batch_size=n, epochs=t, verbose=0, callbacks=[history])
+        
+        score = model.evaluate(X_test, y_test, batch_size=n, verbose=2)
+        
+        test_loss[j][i] = score[0]
+
+
+plt.title('test_error')
+plt.xlabel('t')
+plt.ylabel('error')
+
+plt.scatter(x_dd, test_loss[0])
+plt.semilogx(x_dd, test_loss[0], label='t=10^1')
+plt.scatter(x_dd, test_loss[1])
+plt.semilogx(x_dd, test_loss[1], label='t=10^2')
+
+
+plt.grid()
+plt.legend()
+plt.show()
+
