@@ -27,6 +27,8 @@ then use any of the two models e.g. RandomFourierFeatures, assuming the data is 
 
 test_error = [] # the callback above will save the test error after every iteration in this array
 
+x = np.arange(0, t)
+
 t = 10**5 #number of iterations
  
 m=500 # set to any value you desire
@@ -50,7 +52,7 @@ plt.xlabel('time')
 plt.ylabel('generalization error')
 
 plt.semilogx(x, test_error, label='mse')
-#plt.semilogx(x, y, label='square root of t')
+
 
 plt.grid()
 plt.legend()
